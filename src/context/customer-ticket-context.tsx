@@ -2,20 +2,23 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import type { TicketContextType } from "./types/ticket-context-type";
 import type { Customer } from "../types/models/customer";
 import type { Travel } from "../types/models/travel";
+import type { TravelTicket } from "../types/models/travel-ticket";
 
 const  CustomerTicketContext = createContext<TicketContextType | null>(null);
 export const CustomerTicketProvider = ({children}: {children: ReactNode}) => {
-    const [travel, setTravel] = useState<Travel | null>(null);
+    const [currentTravel, setCurrentTravel] = useState<Travel | null>(null);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [travelPrice, setTravelPrice] = useState(3000);
-
+    const [ticketCreated, setTicketCreated] = useState<TravelTicket | null>(null);
     const value = {
-        travel,
-        setTravel,
+        currentTravel,
+        setCurrentTravel,
         customers,
         setCustomers,
         travelPrice,
-        setTravelPrice
+        setTravelPrice,
+        ticketCreated,
+        setTicketCreated
     };
     
     return <CustomerTicketContext.Provider value={value}>

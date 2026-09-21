@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const ticketRefundSchema = z.object({
     ticketId: z.uuidv7(),
-    paid: z.number().min(0),
+    paid: z.coerce.number<number>().min(0),
     paymentMethodId: z.uuidv7(),
 });
 

@@ -2,10 +2,9 @@ import { Paper, Table, TableContainer, TableHead, TablePagination, TableRow,
     TableBody, TableCell, Stack, styled, tableCellClasses, Button, Select, MenuItem, type SelectChangeEvent, 
     FormControl,
     InputLabel,
-    type SnackbarCloseReason,
-    IconButton,
-    Snackbar} from "@mui/material";
-import React, { useState } from "react";
+    IconButton
+} from "@mui/material";
+import React, { useEffect, useState } from "react";
 import { useFutureTravels } from "../services/travel-service";
 import { travelStates, TravelType, travelTypes, type Travel } from "../types/models/travel";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -17,9 +16,6 @@ import dayjs from "dayjs";
 import { useTicketDatas } from "../context/customer-ticket-context";
 import { useEntitiesInfos } from "../context/entities-infos-context";
 import type { PickerValue } from "@mui/x-date-pickers/internals";
-import CloseIcon from '@mui/icons-material/Close';
-
-
 
 export const PlannedTravels = () => {
     const [page, setPage] = useState(0);
@@ -34,20 +30,21 @@ export const PlannedTravels = () => {
     });
     const travelsQuery = useFutureTravels(travelsQueryParams);
 
-    const { agencyList, agencyStringMap } = useEntitiesInfos();
+    const { agencyStringMap } = useEntitiesInfos();
+
     const handleChangePage = (_: unknown, newPage: number) => {
         setPage(newPage);
     };
 
-    const { setTravel } = useTicketDatas();
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
         setRowsPerPage(+event.target.value);
         setPage(0);
     };
 
+    const { currentTravel, setCurrentTravel } = useTicketDatas();
+
     const selectTravel = (travel: Travel) => {
-        setTravel(travel);
-        setOpenSuccessSnackbar(true);
+        setCurrentTravel(travel);
     }
     const getTravels = () => {
         const travelQueryParams: TravelQueryParams = {
@@ -58,7 +55,6 @@ export const PlannedTravels = () => {
             travelType: travelType
         };
         setTravelsQueryParams(travelQueryParams);
-        console.log(agencyList);
     }
 
     const  displayedColumns = ['Arrival Agency', 'Travel type', 'Travel state',
@@ -73,33 +69,11 @@ export const PlannedTravels = () => {
                 fontSize: 14,
             },
     }));
+    
+    useEffect(() => {
+        getTravels();
+    }, [page, rowsPerPage]);
 
-    const [openSuccessSnackbar, setOpenSuccessSnackbar] = useState(false);
-    const handleCloseSnackbar = (
-        _: React.SyntheticEvent | Event,
-        reason?: SnackbarCloseReason,
-    ) => {
-        if (reason === 'clickaway') {
-        return;
-        }
-
-        setOpenSuccessSnackbar(false);
-    };
-    const snackbarAction = (
-        <React.Fragment>
-        <Button color="secondary" size="small" onClick={handleCloseSnackbar}>
-            Close
-        </Button>
-        <IconButton
-            size="small"
-            aria-label="close"
-            color="inherit"
-            onClick={handleCloseSnackbar}
-        >
-            <CloseIcon fontSize="small" />
-        </IconButton>
-        </React.Fragment>
-    );
 
   return (
     <Stack gap={2}>
@@ -163,7 +137,7 @@ export const PlannedTravels = () => {
                             </StyledTableCell>
                             <StyledTableCell align="right"> 
                                 <IconButton aria-label="select" size="small" onClick={() => selectTravel(travel)}>
-                                    <SelectAllIcon/>
+                                    <SelectAllIcon color={travel.id === currentTravel?.id ? "info" : "inherit"}/>
                                 </IconButton>
                             </StyledTableCell>
                         </TableRow>
@@ -173,22 +147,16 @@ export const PlannedTravels = () => {
                 </Table>
             </TableContainer>
             {travelsQuery.data && travelsQuery.data?.totalPages > 1 && <TablePagination
-                rowsPerPageOptions={[10, 25, 100]}
+                rowsPerPageOptions={[5, 10, 25, 50]}
                 component="div"
-                count={travelsQuery?.data?.totalCount ?? 0}
+                count={travelsQuery.data?.totalCount ?? 0}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
             />}
         </Paper>
-        <Snackbar
-            open={openSuccessSnackbar}
-            autoHideDuration={6000}
-            onClose={handleCloseSnackbar}
-            message="Travel choosen successfully"
-            action={snackbarAction}
-        />
+
     </Stack>
     
   );

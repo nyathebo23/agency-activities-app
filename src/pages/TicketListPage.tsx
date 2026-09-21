@@ -10,20 +10,24 @@ import { Paper, Table, TableContainer, TableHead, TableRow,
     Checkbox,
     Switch,
     InputLabel,
-    FormControl
+    FormControl,
+    IconButton
     } from "@mui/material";
 import { useAgencyTickets } from "../services/travel-ticket-service";
 import dayjs from "dayjs";
-
+import EditIcon from '@mui/icons-material/Edit';
+import MoneyIcon from '@mui/icons-material/Money';
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useEffect, useState } from "react";
 import { TravelType } from "../types/models/travel";
-import { TicketType } from "../types/models/travel-ticket";
+import { TicketType, type TravelTicket } from "../types/models/travel-ticket";
 import type { TicketQueryParams } from "../types/query-params/ticket-query-params";
 import { useEntitiesInfos } from "../context/entities-infos-context";
 import type { PickerValue } from "@mui/x-date-pickers/internals";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import { TicketEditFormDialog } from "../components/TicketEditFormDialog";
+import { TicketRefundFormDialog } from "../components/TicketRefundFormDialog";
 
 
 const ticketTypes = ['RESERVATION', 'DIRECT'];
@@ -42,7 +46,14 @@ export const TicketListPage = () => {
 
     const [startDateTime, setStartDateTime] = useState<PickerValue>(null);
     const [endDateTime, setEndDateTime] = useState<PickerValue>(null);  
-    const { currentAgencyId } = useEntitiesInfos();
+
+    const [openEditDialog, setOpenEditDialog] = useState(false);
+    const [openRefundDialog, setOpenRefundDialog] = useState(false);
+
+    const [ticketToEdit, setTicketToEdit] = useState<TravelTicket>();
+    const [ticketToRefund, setTicketToRefund] = useState<TravelTicket>();
+
+    const { currentAgencyId, paymentMethodStringMap } = useEntitiesInfos();
     const [ticketsQueryParams, setTicketsQueryParams] = useState<TicketQueryParams>({
         pageNumber: page,
         pageSize: rowsPerPage,
@@ -68,7 +79,8 @@ export const TicketListPage = () => {
         },}
     ));
 
-    const  displayedColumns = ['Ref number', 'Fullname', 'Ticket type', 'Issuance datetime', 'Payment method', 'Options'];
+    const  displayedColumns = ['Ref number', 'Fullname', 'Ticket type', 'Issuance datetime', 
+        'Payment method', 'Used', 'Refunded', 'Options'];
 
     const getTicketsOfAgency = () => {
         const ticketQueryParams: TicketQueryParams = {
@@ -200,7 +212,7 @@ export const TicketListPage = () => {
 
         <Paper sx={{ width: '100%', overflow: 'hidden' }}>            
             <TableContainer sx={{ maxHeight: 440 }}>
-                <Table aria-label="simple table">
+                <Table stickyHeader aria-label="simple table">
                     <TableHead>
                     <TableRow>
                         {displayedColumns.map((column) => (
@@ -219,15 +231,32 @@ export const TicketListPage = () => {
                             <TableCell align="right">
                                 {dayjs(ticket.issuanceDatetime).format('YYYY-MM-DD HH:mm')}
                             </TableCell>
-                            <TableCell align="right">{ticket.paymentMethod}</TableCell>
-                            <TableCell align="right"> 
-                                <Button variant="contained">
-                                    Edit
-                                </Button>
-                                <Button variant="contained">
-                                    Refund
-                                </Button>
+                            <TableCell align="right">{paymentMethodStringMap.get(ticket.paymentMethodId)}</TableCell>
+                            <TableCell align="right">
+                                <Checkbox  disabled checked={ticket.used} />
                             </TableCell>
+                            <TableCell align="right">
+                                <Checkbox  disabled checked={ticket.refunded} />
+                            </TableCell>
+                            <TableCell align="right"> 
+                                {!ticket.used && !ticket.refunded && <Stack gap={1} direction={'row'} >
+                                    <IconButton aria-label="select" size="small" 
+                                        onClick={() => {
+                                            setTicketToEdit(ticket);
+                                            setOpenEditDialog(true);
+                                        }}>
+                                        <EditIcon/>
+                                    </IconButton>
+                                    <IconButton aria-label="select" size="small" 
+                                        onClick={() => {
+                                            setTicketToRefund(ticket);
+                                            setOpenRefundDialog(true);
+                                        }}>
+                                        <MoneyIcon/>
+                                    </IconButton>
+                                </Stack>}
+                            </TableCell>
+
                         </TableRow>
                         ))}
                     </TableBody>
@@ -243,6 +272,18 @@ export const TicketListPage = () => {
                 onRowsPerPageChange={handleChangeRowsPerPage}
             />}
         </Paper>
+      {!!ticketToEdit && <TicketEditFormDialog 
+        open={openEditDialog} 
+        handleClose={() => setOpenEditDialog(false)}
+        ticket={ticketToEdit}>
+
+      </TicketEditFormDialog>}
+      {!!ticketToRefund && <TicketRefundFormDialog
+        open={openRefundDialog}
+        handleClose={() => setOpenRefundDialog(false)}
+        ticket={ticketToRefund}>
+
+      </TicketRefundFormDialog>}
     </Stack>
   );
 }

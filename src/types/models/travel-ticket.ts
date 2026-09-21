@@ -4,13 +4,13 @@ export type TravelTicket = {
     ticketType: TicketType;
     issuanceDatetime: Date;
     paid: number;
-    paymentMethod: string;
+    paymentMethodId: string;
     customerId: string;
     customerFullname: string;
     agencyId: string;
     travelId: string;
     used: boolean;
-    refund: boolean;
+    refunded: boolean;
 }
 
 export const TicketType = {

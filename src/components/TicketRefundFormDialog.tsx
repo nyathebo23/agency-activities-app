@@ -1,22 +1,27 @@
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { ticketRefundSchema, type TicketRefundSchema } from "../types/schemas/ticket-refund-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, 
+    FormControl, IconButton, InputLabel, MenuItem, Select, Snackbar, TextField } from "@mui/material";
 import type { TravelTicket } from "../types/models/travel-ticket";
 import { useEntitiesInfos } from "../context/entities-infos-context";
 import { useCreateTicketRefund } from "../services/travel-ticket-service";
+import React, { useState } from "react";
+import CloseIcon from '@mui/icons-material/Close';
 
 export const TicketRefundFormDialog = ({open, handleClose, ticket} : {
         open: boolean, 
         handleClose: () => void, 
-        ticket: TravelTicket
+        ticket: TravelTicket | null,
     }) => {
     const { 
-        register, control, formState: { errors }, reset, handleSubmit } = useForm<TicketRefundSchema>({ 
+        register, control, formState: { errors }, handleSubmit } = useForm<TicketRefundSchema>({ 
         mode: 'all',
         resolver: zodResolver(ticketRefundSchema),
         defaultValues: {
-
+            ticketId: ticket?.id,
+            paymentMethodId: ticket?.paymentMethodId,
+            paid: ticket?.paid
         }
     });
     const { paymentMethodList } = useEntitiesInfos();
@@ -25,16 +30,41 @@ export const TicketRefundFormDialog = ({open, handleClose, ticket} : {
     const onSubmit: SubmitHandler<TicketRefundSchema> = (data) => {
         ticketRefundMutation.mutate(data, {
             onSuccess: (_) => {
-                reset();
-                handleClose();
+                setOpenSnackbarSuccess(true);
             }
         });
     }
 
+    const [ openSnackbarSuccess, setOpenSnackbarSuccess ] = useState(false);
+
+    const handleCloseSnackbarSuccess = (_?: React.SyntheticEvent | Event, reason?: string) => {
+        if (reason === 'clickaway') {
+          return;
+        }   
+        setOpenSnackbarSuccess(false);
+    };
+
+    const SnackbarAction = (handleClose: () => void) => (
+        <React.Fragment>
+            <Button color="secondary" size="small" onClick={handleClose}>
+                Close
+            </Button>
+            <IconButton
+                size="small"
+                aria-label="close"
+                color="inherit"
+                onClick={handleClose}
+            >
+                <CloseIcon fontSize="small" />
+            </IconButton>
+        </React.Fragment>
+    );
+
+
     return (
-    <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>Ticket Refund {ticket.refNumber}</DialogTitle>
-        <DialogContent>
+    <Dialog color="primary" open={open} onClose={handleClose}>
+        <DialogTitle>Ticket Refund {ticket?.refNumber}</DialogTitle>
+        <DialogContent dividers>
           <Box             
             component="form" 
             onSubmit={handleSubmit(onSubmit)}
@@ -58,6 +88,7 @@ export const TicketRefundFormDialog = ({open, handleClose, ticket} : {
                             labelId="payment-method-label"
                             id="payment-method"
                             label="Payment method"
+                            value={field.value}
                             onChange={(e) => field.onChange(e.target.value)}
                         >
                             {
@@ -80,10 +111,17 @@ export const TicketRefundFormDialog = ({open, handleClose, ticket} : {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button type="submit">
+          <Button onClick={handleSubmit(onSubmit)} type="submit">
             Validate
           </Button>
         </DialogActions>
+        <Snackbar
+            open={openSnackbarSuccess}
+            autoHideDuration={2000}
+            onClose={handleCloseSnackbarSuccess}
+            message={`Ticket refunded successfully`}
+            action={SnackbarAction(handleCloseSnackbarSuccess)}
+        />
       </Dialog>
 
 )};

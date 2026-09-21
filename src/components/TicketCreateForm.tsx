@@ -1,69 +1,46 @@
-import { Box, Button, FormControl, IconButton, InputLabel, LinearProgress, MenuItem, 
-    Select, Snackbar, Stack, TextField, Typography, type SnackbarCloseReason } from '@mui/material';
+import { Box, Button, FormControl, InputLabel, LinearProgress, MenuItem, 
+    Select, Stack, Typography } from '@mui/material';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { travelTicketSchema, type TravelTicketSchema } from '../types/schemas/travel-ticket-schema';
 import { useCreateTicket } from '../services/travel-ticket-service';
 import { getErrorMessage } from '../utils/response';
-import { TicketType } from '../types/models/travel-ticket';
+import { TicketType, type TravelTicket } from '../types/models/travel-ticket';
 import { useTicketDatas } from '../context/customer-ticket-context';
 import { useEntitiesInfos } from '../context/entities-infos-context';
-import React, { useState } from 'react';
-import CloseIcon from '@mui/icons-material/Close';
 import { toTravelString } from '../utils/travel_functions';
+import { useQueryClient } from '@tanstack/react-query';
 
-export const TicketCreateForm = ({ backStep }: { backStep: () => void }) => {
-    const { customers, travel, travelPrice } = useTicketDatas();
+export const TicketCreateForm = ({ backStep, nextStep }: { backStep: () => void; nextStep: () => void }) => {
+    const { customers, currentTravel, setTicketCreated } = useTicketDatas();
     const { paymentMethodList } = useEntitiesInfos();
 
-    const { register, control, formState: { errors }, handleSubmit } = useForm<TravelTicketSchema>({ 
+    const { control, handleSubmit } = useForm<TravelTicketSchema>({ 
         mode: 'all',
         resolver: zodResolver(travelTicketSchema),
         defaultValues: {
-            travelId: travel!.id,
+            travelId: currentTravel!.id,
             customerId: customers[0].id,
             ticketType: TicketType.DIRECT,
             paymentMethodId: paymentMethodList[0].id,
-            paid: travelPrice
         }
     });
-
+    const queryClient = useQueryClient();
     const ticketCreateMutation = useCreateTicket();
-    const onSubmit: SubmitHandler<TravelTicketSchema> = (data) => {
-        if (travel)
-            data.travelId = travel.id;
-            //setValue('travelId', travel.id)
-        ticketCreateMutation.mutate(data);
+    const onSubmit: SubmitHandler<TravelTicketSchema> = async (data) => {
+        if (currentTravel)
+            data.travelId = currentTravel.id;
+        ticketCreateMutation.mutate(data, {
+            onSuccess: async (data: TravelTicket) => {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['tickets-of-travel']}),
+                queryClient.invalidateQueries({ queryKey: ['agency-tickets']})
+            ]);           
+            setTicketCreated(data);  
+            nextStep();    
+            console.log("ticket created", data);
+        }});       
     }
-    
-    const [openSuccessSnackbar, setOpenSuccessSnackbar] = useState(false);
-    const handleCloseSnackbar = (
-        _: React.SyntheticEvent | Event,
-        reason?: SnackbarCloseReason,
-    ) => {
-        if (reason === 'clickaway') {
-        return;
-        }
-
-        setOpenSuccessSnackbar(false);
-    };
-
-    const snackbarAction = (
-        <React.Fragment>
-        <Button color="secondary" size="small" onClick={handleCloseSnackbar}>
-            Close
-        </Button>
-        <IconButton
-            size="small"
-            aria-label="close"
-            color="inherit"
-            onClick={handleCloseSnackbar}
-        >
-            <CloseIcon fontSize="small" />
-        </IconButton>
-        </React.Fragment>
-    );
-    console.log(toTravelString(travel!), customers, paymentMethodList, travelPrice);
 
     return (
         <Box     
@@ -81,8 +58,8 @@ export const TicketCreateForm = ({ backStep }: { backStep: () => void }) => {
                 <Typography variant='h4' sx={{textAlign: 'center'}}>
                     Ticket creation
                 </Typography>
-                {travel && <Typography variant='h6' sx={{textAlign: 'center'}}>
-                    {toTravelString(travel)}
+                {currentTravel && <Typography variant='h6' sx={{textAlign: 'center'}}>
+                    {toTravelString(currentTravel)}
                 </Typography>}
                 
                 {ticketCreateMutation.isPending && <LinearProgress  sx={{ marginY: 1 }} />}
@@ -155,13 +132,7 @@ export const TicketCreateForm = ({ backStep }: { backStep: () => void }) => {
                     >
                     </Controller>
                 </FormControl>
-                <TextField 
-                    {...register('paid')}
-                    label="Paid"
-                    variant="outlined"  
-                    error={!!errors.paid}
-                    helperText={errors.paid?.message}
-                />
+
                 <Stack spacing={2} direction="row">
                     <Button 
                         variant="outlined"
@@ -178,13 +149,6 @@ export const TicketCreateForm = ({ backStep }: { backStep: () => void }) => {
                         Create 
                     </Button>
                 </Stack>
-            <Snackbar
-                open={openSuccessSnackbar}
-                autoHideDuration={6000}
-                onClose={handleCloseSnackbar}
-                message="Travel ticket created successfully"
-                action={snackbarAction}
-            />
         </Box>
     );
     

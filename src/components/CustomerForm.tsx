@@ -1,5 +1,5 @@
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
-import { customerSchema, type CustomerSchema } from "../types/schemas/customer-schema";
+import { customerSchema, type CustomerSchemaOutput, type CustomerSchemaInput } from "../types/schemas/customer-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Box, Button, IconButton, Snackbar, Stack, TextField, Typography, type SnackbarCloseReason } from "@mui/material";
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -15,28 +15,33 @@ import dayjs from "dayjs";
 
 export const CustomerForm = ({ nextStep }: { nextStep: () => void } ) => {
     const { 
-        register, control, formState: { errors, isSubmitting }, getValues, trigger, reset, handleSubmit } = useForm<CustomerSchema>({ 
+        register, control, formState: { errors, isSubmitting }, 
+        getValues, trigger, reset, handleSubmit } = useForm<CustomerSchemaInput, any, CustomerSchemaOutput>({ 
         mode: 'all',
-        resolver: zodResolver(customerSchema)
+        resolver: zodResolver(customerSchema),
     });
     const [customerQueryParams, setCustomerQueryParams ] = useState<CustomerQueryParams | null> (null);
     const customerCreateMutation = useCreateCustomer();
     const customersQuery = useCustomersQueryList(customerQueryParams);
-    const { travel } = useTicketDatas();
+    const { currentTravel } = useTicketDatas();
     const [ openSnackbarErr, setOpenSnackbarErr ] = useState(false);
     const [ snackbarErr, setSnackbarErr ] = useState('');
 
-    const onCreate: SubmitHandler<CustomerSchema> = (data) => {
-        if (!travel) {
+    const onCreate: SubmitHandler<CustomerSchemaOutput> = async (data) => {
+        if (!currentTravel) {
             setSnackbarErr('Please select a travel before in the table');
             setOpenSnackbarErr(true);
             return;
         }        
-        customerCreateMutation.mutateAsync(data);
-        if (customerCreateMutation.isSuccess && !customerCreateMutation.isError) {
-            setOpenSuccessSnackbar(true);
-            reset();
-        }
+
+        customerCreateMutation.mutate(data, {
+            onSuccess: (data) => {
+                setCustomers([data]);
+                setOpenSuccessSnackbar(true);
+                reset();
+                nextStep();
+            }
+        });
     }
     const { setCustomers } = useTicketDatas();
     const onQueryCustomers  = async () => {
@@ -46,7 +51,7 @@ export const CustomerForm = ({ nextStep }: { nextStep: () => void } ) => {
             setOpenSnackbarErr(true);
             return;
         }
-        if (!travel) {
+        if (!currentTravel) {
             setSnackbarErr('Please select a travel before in the table');
             setOpenSnackbarErr(true);
             return;
@@ -59,11 +64,9 @@ export const CustomerForm = ({ nextStep }: { nextStep: () => void } ) => {
     }
 
     useEffect(() => {
-        console.log("prev", customersQuery.data);
         if (customersQuery.data) {
             if (customersQuery.data.length > 0) {
                 setCustomers(customersQuery.data);
-                console.log("new", customersQuery.data);
                 nextStep()
             }
             else {
@@ -71,7 +74,7 @@ export const CustomerForm = ({ nextStep }: { nextStep: () => void } ) => {
                 setOpenSnackbarErr(true);
             }
         }
-    }, [customersQuery.data])
+    }, [customersQuery.isSuccess])
     
     const [openSuccessSnackbar, setOpenSuccessSnackbar] = useState(false);
     const handleCloseSnackbar = (
@@ -157,7 +160,7 @@ export const CustomerForm = ({ nextStep }: { nextStep: () => void } ) => {
                 control={control}
                 render={({ field: { onChange, value } }) => (
                     <TextField
-                        value={value}
+                        value={value || ''}
                         onChange={(e) => {
                             let v = e.target.value.replace(/\D/g, '');
                             if (v.length > 9) v = v.slice(0, 9);
@@ -183,7 +186,7 @@ export const CustomerForm = ({ nextStep }: { nextStep: () => void } ) => {
                     render={({ field: { onChange, value } }) => (
                     <DatePicker
                         label="Date of birth"
-                        value={value}
+                        value={value || null}
                         onChange={(newValue) => {
                             onChange(newValue); // ← transmet Dayjs | null directement
                         }}

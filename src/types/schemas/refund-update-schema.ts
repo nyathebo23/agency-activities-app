@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const refundUpdateSchema = z.object({
-    paid: z.number().min(0),
+    paid: z.coerce.number<number>().min(0),
     paymentMethodId: z.uuidv7(),
 });
 

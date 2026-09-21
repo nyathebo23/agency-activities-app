@@ -3,16 +3,15 @@ import Stepper from '@mui/material/Stepper';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import StepContent from '@mui/material/StepContent';
-import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Grid, Stack, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Box, Grid, Stack, Typography } from '@mui/material';
 import { CustomerForm } from '../components/CustomerForm';
 import { TicketCreateForm } from '../components/TicketCreateForm';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { PlannedTravels } from '../components/PlannedTravels';
 import { TravelTicketsList } from '../components/TravelTicketsList';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { ConfirmTicketCreation } from '../components/ConfirmTicketCreation';
 
 export const TicketCreatePage = () => {
-
     const [activeStep, setActiveStep] = React.useState(0);
 
     const handleNext = () => {
@@ -22,9 +21,6 @@ export const TicketCreatePage = () => {
     const handleBack = () => {
         setActiveStep((prevActiveStep) => prevActiveStep - 1);
     };
-    React.useEffect(() => {
-        console.log(activeStep);
-    }, [activeStep]);
 
     const steps = [
         {
@@ -51,28 +47,16 @@ export const TicketCreatePage = () => {
                             <Step key={steps[1].label}>
                                 <StepLabel>{steps[1].label}</StepLabel>
                                 <StepContent>
-                                    <TicketCreateForm backStep={handleBack}></TicketCreateForm>
+                                    <TicketCreateForm nextStep={handleNext} backStep={handleBack}></TicketCreateForm>
                                 </StepContent>
-     
                             </Step>
                             <Step key={steps[2].label}>
                                 <StepLabel>{steps[2].label}</StepLabel>
                                 <StepContent>
-                                    <Box sx={{ alignItems: 'center', display: 'flex', flexDirection: 'column'}}>
-                                        <CheckCircleIcon fontSize='large' color='success' />
-                                        <Typography>
-                                            Ticket created sucessfully
-                                        </Typography> 
-                                    </Box>
-                                    <Button 
-                                        variant="outlined"
-                                        sx={{ textAlign: 'right' }}
-                                        onClick={handleBack}
-                                    >
-                                        Back
-                                    </Button>
+                                    <ConfirmTicketCreation backStep={handleBack} resetStep={() => setActiveStep(0)}>
+
+                                    </ConfirmTicketCreation>
                                 </StepContent>
-     
                             </Step>
                     </Stepper>
                     {/* {activeStep === steps.length && (
@@ -88,7 +72,7 @@ export const TicketCreatePage = () => {
             <Grid size={{ xs: 12, sm: 6, md: 8, lg: 9 }}>
                 <Box>
                     <Stack gap={2}>
-                        <Accordion>
+                        <Accordion defaultExpanded>
                             <AccordionSummary
                                 expandIcon={<ExpandMoreIcon />}
                                 aria-controls="panel1-content"

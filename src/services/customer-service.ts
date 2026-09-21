@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { CustomerSchema } from "../types/schemas/customer-schema";
+import type { CustomerSchemaOutput } from "../types/schemas/customer-schema";
 import { API_ROUTES } from "../constants/urls";
 import { api } from "./api-requests";
 import type { Customer } from "../types/models/customer";
@@ -7,12 +7,16 @@ import type { CustomerQueryParams } from "../types/query-params/customer-query-p
 
 export function useCreateCustomer() {
     return useMutation({
-        mutationFn: async (data: CustomerSchema) => {
+        mutationFn: async (data: CustomerSchemaOutput) => {
             const response = await api.post<Customer>(API_ROUTES.CUSTOMERS, {
                 ...data, 
                 dateBirth: data.dateBirth?.toISOString().split('T')[0]
             });
-            return response.data;
+            return {
+                    id: response.data.id,
+                    dateBirth: new Date(response.data.dateBirth),
+                    user: response.data.user
+                } as Customer;
         }
     }) 
 }
@@ -34,6 +38,10 @@ export function useCustomersQueryList(queryParams: CustomerQueryParams | null) {
                 } as Customer
             } );
         },
+        staleTime: Infinity,
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
         enabled: !!queryParams
     });
 }

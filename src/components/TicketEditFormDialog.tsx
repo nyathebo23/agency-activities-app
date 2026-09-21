@@ -1,54 +1,84 @@
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, IconButton, InputLabel, LinearProgress, MenuItem, Select, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, 
+    IconButton, InputLabel, LinearProgress, MenuItem, Select, Skeleton, Snackbar, Stack, Typography } from "@mui/material";
 import { TicketType, type TravelTicket } from "../types/models/travel-ticket";
 import { useEntitiesInfos } from "../context/entities-infos-context";
 import { travelTicketSchema, type TravelTicketSchema } from "../types/schemas/travel-ticket-schema";
 import type { TravelQueryParams } from "../types/query-params/travel-query-params";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useFutureTravels } from "../services/travel-service";
 import { toTravelString } from "../utils/travel_functions";
 import { useUpdateTicket } from "../services/travel-ticket-service";
 import { getErrorMessage } from "../utils/response";
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import CloseIcon from '@mui/icons-material/Close';
 
 export const TicketEditFormDialog = ({open, handleClose, ticket} : {
         open: boolean, 
         handleClose: () => void, 
-        ticket: TravelTicket,
+        ticket: TravelTicket | null,
     }) => {
-    const { 
-        register, control, formState: { errors }, reset, handleSubmit } = useForm<TravelTicketSchema>({ 
+    const { paymentMethodList } = useEntitiesInfos();
+    const { control, handleSubmit } = useForm<TravelTicketSchema>({ 
         mode: 'all',
         resolver: zodResolver(travelTicketSchema),
         defaultValues: {
-            
+            ticketType: ticket?.ticketType,
+            travelId: ticket?.travelId,
+            paymentMethodId: ticket?.paymentMethodId,
+            customerId: ticket?.customerId
         }
     });
     const [page, setPage] = useState(0);
-    const { paymentMethodList } = useEntitiesInfos();
 
     const travelsQueryParams: TravelQueryParams = {
             pageNumber: page,
             pageSize: 25,
     };
     const travelsQuery = useFutureTravels(travelsQueryParams);
-    const ticketEditMutation = useUpdateTicket(ticket.id);
+    const ticketEditMutation = useUpdateTicket(ticket?.id || '');
 
     const onSubmit: SubmitHandler<TravelTicketSchema> = (data) => {
         ticketEditMutation.mutate(data, {
             onSuccess: (_) => {
-                reset();
-                handleClose();
+                setOpenSnackbarSuccess(true);
+                
             }
         });
     }
 
+    const [ openSnackbarSuccess, setOpenSnackbarSuccess ] = useState(false);
+
+    const handleCloseSnackbarSuccess = (_?: React.SyntheticEvent | Event, reason?: string) => {
+        if (reason === 'clickaway') {
+          return;
+        }   
+        setOpenSnackbarSuccess(false);
+    };
+
+    const SnackbarAction = (handleClose: () => void) => (
+        <React.Fragment>
+        <Button color="secondary" size="small" onClick={handleClose}>
+            Close
+        </Button>
+        <IconButton
+            size="small"
+            aria-label="close"
+            color="inherit"
+            onClick={handleClose}
+        >
+            <CloseIcon fontSize="small" />
+        </IconButton>
+        </React.Fragment>
+    );
+
+
     return (
-    <Dialog open={open} onClose={handleClose}>
+    <Dialog color="primary" open={open} onClose={handleClose}>
         <DialogTitle>Ticket edit</DialogTitle>
-        <DialogContent>
+        <DialogContent dividers>
             <Box             
                 component="form" 
                 onSubmit={handleSubmit(onSubmit)}
@@ -86,26 +116,29 @@ export const TicketEditFormDialog = ({open, handleClose, ticket} : {
                     >
                     </Controller>
                 </FormControl>
-                <FormControl fullWidth>
+                <FormControl>
                     <InputLabel id="travel-label">Travel</InputLabel>
-                    <Controller
+                    {travelsQuery.isPending && <Skeleton variant="rectangular" width={'100%'} height={20} />}
+                    {travelsQuery.data && <Controller
                         name="travelId"
                         control={control}
                         render={({ field }) => (
                             <Stack gap={1} direction={'row'}>
+
                                 <Select
+                                    fullWidth
                                     labelId="travel-label"
                                     id="travel"
                                     label="Travel"
                                     value={field.value}
                                     onChange={(e) => field.onChange(e.target.value)}
                                 >
-                                    {travelsQuery?.data?.items.map(travel => (
+                                    {travelsQuery.data?.items.map(travel => (
                                     <MenuItem value={travel.id}>{toTravelString(travel)}</MenuItem>
                                     ))}
                                 </Select>
                                 <IconButton 
-                                    disabled={page === 0} 
+                                    disabled={!travelsQuery.data?.hasPreviousPage} 
                                     onClick={() => setPage(page-1)}
                                 >
                                     <ChevronLeftIcon />
@@ -120,7 +153,7 @@ export const TicketEditFormDialog = ({open, handleClose, ticket} : {
 
                         )}
                     >
-                    </Controller>
+                    </Controller>}
                 </FormControl>
                 <FormControl fullWidth>
                     <InputLabel id="payment-method-label">Payment method</InputLabel>
@@ -132,6 +165,7 @@ export const TicketEditFormDialog = ({open, handleClose, ticket} : {
                                 labelId="payment-method-label"
                                 id="payment-method"
                                 label="Payment method"
+                                value={field.value}
                                 onChange={(e) => field.onChange(e.target.value)}
                             >
                                 {
@@ -143,22 +177,21 @@ export const TicketEditFormDialog = ({open, handleClose, ticket} : {
                     >
                     </Controller>
                 </FormControl>
-                
-                <TextField 
-                    {...register('paid')}
-                    label="Paid"
-                    variant="outlined"  
-                    error={!!errors.paid}
-                    helperText={errors.paid?.message}
-                />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button type="submit">
+          <Button variant="contained" onClick={handleSubmit(onSubmit)} type="submit">
             Validate
           </Button>
         </DialogActions>
+        <Snackbar
+            open={openSnackbarSuccess}
+            autoHideDuration={2000}
+            onClose={handleCloseSnackbarSuccess}
+            message={`Ticket edited successfully`}
+            action={SnackbarAction(handleCloseSnackbarSuccess)}
+        />
       </Dialog>
 
 )};

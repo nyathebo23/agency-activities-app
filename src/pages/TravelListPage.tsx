@@ -175,9 +175,9 @@ export const TravelListPage = () => {
                 </Table>
             </TableContainer>
             {travelsQuery.data && travelsQuery.data?.totalPages > 1 && <TablePagination
-                rowsPerPageOptions={[10, 25, 100]}
+                rowsPerPageOptions={[5, 10, 25, 50]}
                 component="div"
-                count={travelsQuery?.data?.totalCount ?? 0}
+                count={travelsQuery.data?.totalCount ?? 0}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}

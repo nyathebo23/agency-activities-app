@@ -2,12 +2,26 @@ import type { Dayjs } from 'dayjs';
 import { z } from 'zod';
 
 export const customerSchema = z.object({
-    username: z.string(),
-    password: z.string(),
-    lastname: z.string().min(1, {error: 'Lastname is required'}),
-    firstname: z.string(),
-    phoneNumber: z.string().refine(
-      (val) => val.replace(/\s/g, '').length == 9, {
+    username: z.preprocess(
+        (val: string) => (val.trim() == '' ? undefined : val),
+         z.string().optional()
+    ),
+    password: z.preprocess(
+        (val: string) => (val.trim() == '' ? undefined : val),
+         z.string().optional()
+    ),
+    lastname: z.preprocess(
+        (val: string) =>  val.trim(),
+        z.string().refine(
+          (val) => val.trim().length > 0, { error: 'Lastname is required' }
+        )
+      ),
+    firstname: z.preprocess(
+        (val: string) => { const outVal = val.trim(); return outVal == '' ? '' : outVal; },
+         z.string().optional()
+    ),
+    phoneNumber: z.string().optional().refine(
+      (val) => !val || val.replace(/\s/g, '').length == 9, {
         error: 'Invalid phone number'
       }
     ),
@@ -25,7 +39,8 @@ export const customerSchema = z.object({
     // ),
 });
 
-export type CustomerSchema = z.infer<typeof customerSchema>;
+export type CustomerSchemaInput = z.input<typeof customerSchema>;
+export type CustomerSchemaOutput = z.output<typeof customerSchema>;
 
 export const customerNamesSchema = customerSchema.pick({
       firstname: true,

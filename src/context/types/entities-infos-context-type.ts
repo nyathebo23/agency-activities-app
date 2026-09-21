@@ -10,6 +10,7 @@ export type EntitiesInfosContextType = {
     busList: Bus[],
     busStringMap: Map<string, string>,
     paymentMethodList: PaymentMethod[],
+    paymentMethodStringMap: Map<string, string>,
     busDriverList: BusDriver[],
     busDriverStringMap: Map<string, string>
 }

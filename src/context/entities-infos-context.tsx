@@ -21,11 +21,17 @@ export const EntitiesInfosProvider = ({children}: {children: ReactNode}) => {
     for (const busDriver of busDriverList) {
         busdriversStringMap.set(busDriver.id, (busDriver.user.lastname ?? '') + ' ' + (busDriver.user.firstname ?? ''));
     }    
+    const paymentMethodStringMap = new Map<string, string>();
+    const paymentMethodList = getStoredPaymentMethodList() ?? [];
+    for (const paymentMethod of paymentMethodList) {
+        paymentMethodStringMap.set(paymentMethod.id, paymentMethod.name);
+    }
     const value: EntitiesInfosContextType = {
         agencyList: agencyList,
         currentAgencyId: getStoredCurrentAgencyId() ?? '',
         agencyStringMap: agenciesStrMap,
-        paymentMethodList: getStoredPaymentMethodList() ?? [],
+        paymentMethodList: paymentMethodList,
+        paymentMethodStringMap: paymentMethodStringMap,
         busDriverList: busDriverList,
         busDriverStringMap: busdriversStringMap,
         busList: busList,

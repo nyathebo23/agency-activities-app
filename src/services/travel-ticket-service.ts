@@ -18,6 +18,7 @@ const fetchTickets = async (filters: TicketQueryParams, currentAgencyId: string)
     return response.data;
 }  
 
+
 export function useAgencyTickets(filters: TicketQueryParams, currentAgencyId: string) {
     return useQuery({
         queryKey: ['agency-tickets', filters],
@@ -37,18 +38,11 @@ export function useTicketsOfTravel(travelId: string | null) {
 }
 
 export function useCreateTicket() {
-    const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (data: TravelTicketSchema) => {
             const response = await api.post<TravelTicket>(API_ROUTES.TRAVEL_TICKETS, data);
             return response.data;
         },
-        onSuccess: async () => {
-            await Promise.all([
-                queryClient.invalidateQueries({ queryKey: ['tickets-of-travel']}),
-                queryClient.invalidateQueries({ queryKey: ['agency-tickets']})
-            ]);                 
-        }
     });
 }
 
@@ -65,6 +59,15 @@ export function useUpdateTicket(ticketId: string) {
                 queryClient.invalidateQueries({ queryKey: ['agency-tickets']})
             ]);            
         }
+    });
+}
+
+export function useDeleteTicket(ticketId: string) {
+    return useMutation({
+        mutationFn: async () => {
+            const resp = await api.delete(API_ROUTES.TRAVEL_TICKETS + ticketId);
+            return resp.status;
+        },
     });
 }
 

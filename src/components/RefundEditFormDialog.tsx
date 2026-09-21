@@ -1,20 +1,21 @@
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, 
-    InputLabel, LinearProgress, MenuItem, Select, TextField, Typography } from "@mui/material";
+    InputLabel, LinearProgress, MenuItem, Select, Snackbar, TextField, Typography } from "@mui/material";
 import { useEntitiesInfos } from "../context/entities-infos-context";
 import { useUpdateTicketRefund } from "../services/travel-ticket-service";
 import { getErrorMessage } from "../utils/response";
 import { refundUpdateSchema, type RefundUpdateSchema } from "../types/schemas/refund-update-schema";
 import type { TicketRefund } from "../types/models/ticket-refund";
+import { useState } from "react";
 
-export const TicketEditFormDialog = ({open, handleClose, refund} : {
+export const RefundEditFormDialog = ({open, handleClose, refund} : {
         open: boolean, 
         handleClose: () => void, 
         refund: TicketRefund,
     }) => {
     const { 
-        register, control, formState: { errors }, reset, handleSubmit } = useForm<RefundUpdateSchema>({ 
+        register, control, formState: { errors }, handleSubmit } = useForm<RefundUpdateSchema>({ 
         mode: 'all',
         resolver: zodResolver(refundUpdateSchema),
         defaultValues: {
@@ -29,11 +30,20 @@ export const TicketEditFormDialog = ({open, handleClose, refund} : {
     const onSubmit: SubmitHandler<RefundUpdateSchema> = (data) => {
         refundEditMutation.mutate(data, {
             onSuccess: (_) => {
-                reset();
+                setOpenSnackbarSuccess(true);
                 handleClose();
-            }
+            },
         });
     }
+
+    const [ openSnackbarSuccess, setOpenSnackbarSuccess ] = useState(false);
+    const handleCloseSnackbarSuccess = (_?: React.SyntheticEvent | Event, reason?: string) => {
+        if (reason === 'clickaway') {
+            return;
+        }   
+        setOpenSnackbarSuccess(false);
+    };
+
 
     return (
     <Dialog open={open} onClose={handleClose}>
@@ -84,6 +94,12 @@ export const TicketEditFormDialog = ({open, handleClose, refund} : {
             Subscribe
           </Button>
         </DialogActions>
+        <Snackbar
+            open={openSnackbarSuccess}
+            autoHideDuration={2000}
+            onClose={handleCloseSnackbarSuccess}
+            message={`Ticket refund edited successfully`}
+        />
       </Dialog>
 
 )};

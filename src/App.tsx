@@ -3,7 +3,7 @@ import { EntitiesInfosProvider } from './context/entities-infos-context';
 import { AgentsListPage } from './pages/AgentsListPage';
 import Layout from './pages/Layout';
 import Login from './pages/Login';
-import { Route, Routes } from 'react-router';
+import { Navigate, Route, Routes } from 'react-router';
 import { TicketCreatePage } from './pages/TicketCreatePage';
 import { TicketListPage } from './pages/TicketListPage';
 import { TravelListPage } from './pages/TravelListPage';
@@ -27,12 +27,16 @@ function App() {
       <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <Routes>
+              <Route path='/' element={<Navigate to='/tickets-create' replace />} />
               <Route path='/login' element={<Login/>} />
               <Route element={<EntitiesInfosProvider><Layout/></EntitiesInfosProvider>}>
                   <Route path='agency-agents-list' element={<AgentsListPage/>} />
-                  <Route index path='tickets-create' element={<CustomerTicketProvider>
+                  <Route index element={<CustomerTicketProvider>
                     <TicketCreatePage/>
-                  </CustomerTicketProvider> } />
+                  </CustomerTicketProvider>} />
+                  <Route path='tickets-create' element={<CustomerTicketProvider>
+                    <TicketCreatePage/>
+                  </CustomerTicketProvider>} />
                   <Route path='tickets-list' element={<TicketListPage/>} />
                   <Route path='travels' element={<TravelListPage/>} />
                   <Route path='ticket-refunds' element={<TicketRefundsPage/>} />

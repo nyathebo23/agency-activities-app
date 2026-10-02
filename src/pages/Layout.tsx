@@ -11,17 +11,19 @@ import ListItemText from '@mui/material/ListItemText';
 import MuiAppBar, { type AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { CssBaseline, IconButton, styled, Toolbar, Typography, useTheme } from '@mui/material';
+import { Button, CssBaseline, IconButton, styled, Toolbar, Typography, useTheme } from '@mui/material';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import BookOnlineIcon from '@mui/icons-material/BookOnline';
 import DirectionsBusFilledIcon from '@mui/icons-material/DirectionsBusFilled';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import GroupsIcon from '@mui/icons-material/Groups';
-import { NavLink, Outlet } from 'react-router';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { NavLink, Outlet, useNavigate } from 'react-router';
 import type { jsx } from '@emotion/react';
 import { useAxiosInterceptor } from '../utils/axios-interceptor';
-import HelpIcon from '@mui/icons-material/Help';
-import SettingsIcon from '@mui/icons-material/Settings';
+import { useAuth } from '../context/auth-context';
+
+import type { JSX } from 'react/jsx-runtime';
 
 const drawerWidth = 240;
 
@@ -87,6 +89,8 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 
 export default function Layout() {  
   useAxiosInterceptor();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const navItems: {
     label: string, link: string, icon: jsx.JSX.Element
@@ -98,9 +102,13 @@ export default function Layout() {
     {label: 'Ticket refunds', link:'/ticket-refunds', icon: <ReceiptIcon/>},
   ];
 
-  const extraNavItems = [
-    {label: 'Settings', link:'/settings', icon: <SettingsIcon/>},
-    {label: 'Help', link:'/help', icon: <HelpIcon/>},
+  const extraNavItems: {
+      label: string;
+      link: string;
+      icon: JSX.Element;
+  }[] = [
+    //{label: 'Settings', link:'/settings', icon: <SettingsIcon/>},
+    //{label: 'Help', link:'/help', icon: <HelpIcon/>},
   ];
 
   // const toggleDrawer = (newOpen: boolean) => () => {
@@ -140,6 +148,17 @@ export default function Layout() {
           <Typography variant="h6" noWrap component="div">
             Trip management
           </Typography>
+          <Button
+            color="inherit"
+            startIcon={<LogoutIcon />}
+            onClick={() => {
+              logout();
+              navigate('/login', { replace: true });
+            }}
+            sx={{ ml: 'auto' }}
+          >
+            Logout
+          </Button>
         </Toolbar>
       </AppTopBar>
       <Drawer
